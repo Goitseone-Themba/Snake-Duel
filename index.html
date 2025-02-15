@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Duel</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #202020;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            background-color: #303030;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="gameCanvas" width="900" height="900"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const gridSize = 20;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        let redSnake;
+        let greenSnake;
+        let food;
+
+        let gameLoop;
+
+        function initializeGame() {
+            redSnake = new Snake("red", canvasWidth / 4, canvasHeight / 2);
+            greenSnake = new Snake("green", 3 * canvasWidth / 4, canvasHeight / 2);
+            food = generateFood();
+            gameLoop = setInterval(gameLoopFunction, 100)
+        }
+
+        class Snake {
+            constructor(color, x, y) {
+                this.color = color;
+                this.body = [{x, y}];
+                this.dx = 1;  // Initial direction: right
+                this.dy = 0;
+                this.score = 0;
+            }
+
+            update() {
+                const head = {...this.body[0]}; // Copy head
+                head.x += this.dx * gridSize;
+                head.y += this.dy * gridSize;
+
+                this.body.unshift(head); // Add new head
+
+                if (head.x === food.x && head.y === food.y) {
+                    this.score++;
+                    food = generateFood();
+                } else {
+                    this.body.pop(); // Remove tail
+                }
+
+                this.checkCollision();
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                this.body.forEach(segment => {
+                    ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+                });
+            }
+
+            setDirection(dx, dy) {
+                if ((this.dx !== -dx || this.dy !== -dy) && (this.dx !== dx || this.dy !== dy)) { // Prevent reverse movement
+                    this.dx = dx;
+                    this.dy = dy;
+                }
+            }
+
+            checkCollision() {
+                const head = this.body[0];
+
+                if (head.x < 0 || head.x >= canvasWidth || head.y < 0 || head.y >= canvasHeight || this.selfCollision() || this.opponentCollision()) {
+                    gameOver(this.color === "red" ? "green" : "red");
+                }
+            }
+
+            selfCollision() {
+                for (let i = 1; i < this.body.length; i++) {
+                    if (this.body[i].x === this.body[0].x && this.body[i].y === this.body[0].y) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            opponentCollision() {
+                const opponent = this.color === "red" ? greenSnake : redSnake;
+                for (const segment of opponent.body) {
+                    if (segment.x === this.body[0].x && segment.y === this.body[0].y) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+
+        function generateFood() {
+            let x, y;
+            do {
+                x = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
+                y = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
+            } while (snakeCollision(x, y)); // Ensure food doesn't spawn inside a snake
+
+            return {x, y};
+        }
+
+        function snakeCollision(x, y) {
+            for (const segment of redSnake.body) {
+                if (segment.x === x && segment.y === y) return true;
+            }
+            for (const segment of greenSnake.body) {
+                if (segment.x === x && segment.y === y) return true;
+            }
+            return false;
+        }
+
+
+        function gameOver(winner) {
+            clearInterval(gameLoop);
+            ctx.fillStyle = "white";
+            ctx.font = "30px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(`${winner} snake wins!`, canvasWidth / 2, canvasHeight / 2);
+        }
+
+        function gameLoopFunction() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            //redSnake.update();
+            greenSnake.update();
+
+            redSnake.draw();
+            greenSnake.draw();
+
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(food.x, food.y, gridSize, gridSize);
+
+            // Draw scores
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText(`Red: ${redSnake.score}`, 10, 30);
+            ctx.textAlign = "right";
+            ctx.fillText(`Green: ${greenSnake.score}`, canvasWidth - 10, 30);
+
+        }
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'ArrowUp': redSnake.setDirection(0, -1); break;
+                case 'ArrowDown': redSnake.setDirection(0, 1); break;
+                case 'ArrowLeft': redSnake.setDirection(-1, 0); break;
+                case 'ArrowRight': redSnake.setDirection(1, 0); break;
+
+                // Green Snake (Dvorak and Qwerty)
+                case 'KeyV': // Dvorak Up
+                case 'KeyW': // Qwerty Up
+                    greenSnake.setDirection(0, -1);
+                    break;
+                case 'KeyC': // Dvorak Down
+                case 'KeyS': // Qwerty Down
+                    greenSnake.setDirection(0, 1);
+                    break;
+                case 'KeyJ': // Dvorak Left
+                case 'KeyA': // Qwerty Left
+                    greenSnake.setDirection(-1, 0);
+                    break;
+                case 'KeyP': // Dvorak Right
+                case 'KeyD': // Qwerty Right
+                    greenSnake.setDirection(1, 0);
+                    break;
+
+            }
+        });
+
+        initializeGame();
+
+    </script>
+
+</body>
+
+</html>
