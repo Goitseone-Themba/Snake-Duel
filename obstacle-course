@@ -1,0 +1,274 @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIUST Mega Snake!</title>
+  <style>
+  body {
+  font-family: 'Arial', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+  margin: 0;
+  }
+  #gameBoard {
+  background-color: #000;
+  border: 5px solid #333;
+  }
+  .score {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 20px;
+  color: white;
+  }
+  </style>
+ </head>
+ <body>
+ 
+
+  <canvas id="gameBoard" width="900" height="700"></canvas>
+  <div class="score">Score: <span id="score">0</span></div>
+ 
+
+  <script>
+  const canvas = document.getElementById('gameBoard');
+  const ctx = canvas.getContext('2d');
+ 
+
+  // Game dimensions
+  const boardWidth = 900;
+  const boardHeight = 700;
+ 
+
+  // Snake properties
+  const snakeBlockSize = 20;
+  let snake = [{x: 100, y: 50}, {x: 90, y: 50}, {x: 80, y: 50}];
+  let dx = snakeBlockSize; // Change in x
+  let dy = 0; // Change in y
+ 
+
+  // Food properties
+  let food1 = {x: 200, y: 200};
+  let food2 = {x: 300, y: 300};
+  const foodSize = 10;
+ 
+
+  // Obstacles
+  let obstacles = [
+  {x: 400, y: 150, width: 40, height: 20},
+  {x: 600, y: 350, width: 30, height: 50},
+  {x: 150, y: 500, width: 60, height: 30},
+  {x: 700, y: 550, width: 20, height: 40},
+  {x: 300, y: 600, width: 50, height: 20}
+  ];
+ 
+
+  let score = 0;
+ 
+
+  // Game loop
+  function main() {
+  if (hasGameEnded()) {
+  alert('Game Over! Score: ' + score);
+  resetGame();
+  return;
+  }
+ 
+
+  setTimeout(function onTick() {
+  clearCanvas();
+  drawFood();
+  moveSnake();
+  drawSnake();
+  drawObstacles();
+  main();
+  }, 100)
+  }
+ 
+
+  // Draw a border around the canvas
+  function clearCanvas() {
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, boardWidth, boardHeight);
+  }
+ 
+
+  // Draw the snake
+  function drawSnake() {
+  snake.forEach(drawSnakeBlock)
+  }
+ 
+
+  function drawSnakeBlock(snakeBlock) {
+  ctx.fillStyle = 'green';
+  ctx.fillRect(snakeBlock.x, snakeBlock.y, snakeBlockSize, snakeBlockSize);
+  }
+ 
+
+  // Move the snake
+  function moveSnake() {
+  const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+  snake.unshift(head);
+  const didEatFood1 = snake[0].x < food1.x + foodSize &&
+  snake[0].x + snakeBlockSize > food1.x &&
+  snake[0].y < food1.y + foodSize &&
+  snake[0].y + snakeBlockSize > food1.y;
+ 
+
+  const didEatFood2 = snake[0].x < food2.x + foodSize &&
+  snake[0].x + snakeBlockSize > food2.x &&
+  snake[0].y < food2.y + foodSize &&
+  snake[0].y + snakeBlockSize > food2.y;
+ 
+
+  if (didEatFood1) {
+  score += 10;
+  document.getElementById('score').innerText = score;
+  createFood1();
+  } else if (didEatFood2) {
+  score += 20;
+  document.getElementById('score').innerText = score;
+  createFood2();
+  } else {
+  snake.pop();
+  }
+  }
+ 
+
+  // Draw food
+  function drawFood() {
+  ctx.fillStyle = 'red';
+  ctx.fillRect(food1.x, food1.y, foodSize, foodSize);
+ 
+
+  ctx.fillStyle = 'yellow';
+  ctx.fillRect(food2.x, food2.y, foodSize, foodSize);
+  }
+ 
+
+  // Create food
+  function createFood1() {
+  food1 = {
+  x: Math.floor(Math.random() * (boardWidth - foodSize) / snakeBlockSize) * snakeBlockSize,
+  y: Math.floor(Math.random() * (boardHeight - foodSize) / snakeBlockSize) * snakeBlockSize
+  }
+ 
+
+  snake.forEach(function isTouching(part) {
+  if (part.x == food1.x && part.y == food1.y)
+  createFood1();
+  });
+  }
+ 
+
+  function createFood2() {
+  food2 = {
+  x: Math.floor(Math.random() * (boardWidth - foodSize) / snakeBlockSize) * snakeBlockSize,
+  y: Math.floor(Math.random() * (boardHeight - foodSize) / snakeBlockSize) * snakeBlockSize
+  }
+ 
+
+  snake.forEach(function isTouching(part) {
+  if (part.x == food2.x && part.y == food2.y)
+  createFood2();
+  });
+  }
+ 
+
+  // Draw obstacles
+  function drawObstacles() {
+  obstacles.forEach(obstacle => {
+  ctx.fillStyle = 'grey';
+  ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+  });
+  }
+ 
+
+  // Check if game has ended
+  function hasGameEnded() {
+  for (let i = 4; i < snake.length; i++) {
+  if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true
+  }
+ 
+
+  const hitLeftWall = snake[0].x < 0;
+  const hitRightWall = snake[0].x > boardWidth - snakeBlockSize;
+  const hitToptWall = snake[0].y < 0;
+  const hitBottomWall = snake[0].y > boardHeight - snakeBlockSize;
+ 
+
+  // Check obstacle collision
+  for (let obstacle of obstacles) {
+  if (snake[0].x < obstacle.x + obstacle.width &&
+  snake[0].x + snakeBlockSize > obstacle.x &&
+  snake[0].y < obstacle.y + obstacle.height &&
+  snake[0].y + snakeBlockSize > obstacle.y) {
+  return true;
+  }
+  }
+ 
+
+  return hitLeftWall || hitRightWall || hitToptWall || hitBottomWall
+  }
+ 
+
+  // Change snake direction
+  function changeDirection(event) {
+  const keyPressed = event.keyCode;
+  const goingUp = dy === -snakeBlockSize;
+  const goingDown = dy === snakeBlockSize;
+  const goingLeft = dx === -snakeBlockSize;
+  const goingRight = dx === snakeBlockSize;
+ 
+
+  if (keyPressed === 37 && !goingRight) {
+  dx = -snakeBlockSize;
+  dy = 0;
+  }
+ 
+
+  if (keyPressed === 38 && !goingDown) {
+  dx = 0;
+  dy = -snakeBlockSize;
+  }
+ 
+
+  if (keyPressed === 39 && !goingLeft) {
+  dx = snakeBlockSize;
+  dy = 0;
+  }
+ 
+
+  if (keyPressed === 40 && !goingUp) {
+  dx = 0;
+  dy = snakeBlockSize;
+  }
+  }
+ 
+
+  // Reset the game
+  function resetGame() {
+  snake = [{x: 100, y: 50}, {x: 90, y: 50}, {x: 80, y: 50}];
+  score = 0;
+  dx = snakeBlockSize;
+  dy = 0;
+  createFood1();
+  createFood2();
+  document.getElementById('score').innerText = score;
+  main();
+  }
+ 
+
+  document.addEventListener("keydown", changeDirection);
+ 
+
+  createFood1();
+  createFood2();
+  main();
+  </script>
+ </body>
+ </html>
